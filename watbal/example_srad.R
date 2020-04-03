@@ -18,6 +18,8 @@ names(wth) <- c("DATE","SRAD","TMAX","TMIN","RAIN")
 
 #getting the right type of matrix for 'daily_hist'
 #NOTE: this object is all daily data from AgMERRA for the site
+#      this object must have all AgMERRA years
+#      srad in MJ/day
 x <- wth[,c("DATE","SRAD","RAIN")]
 x$YEAR <- as.numeric(substr(x$DATE,1,2))
 x$dumm <- as.numeric(x$YEAR) %% 100 > 1950%%100
@@ -30,8 +32,9 @@ x$date1 <- paste(as.Date((x$DOY-1), origin = paste(x$YEAR,"-01-01",sep="")))
 x <- x[,c("date1","RAIN","SRAD","month")]
 names(x) <- c("date","prate","srad","month")
 
-#this object is all daily data from CHIRPS and CHIRTS
+#this object is all daily data from CHIRPS and CHIRTS ('tdates')
 #getting the right type of matrix for 'tdates'
+#this object can have only 1 year of data
 y <- wth[,c("DATE","RAIN","TMIN","TMAX")]
 y$YEAR <- as.numeric(substr(y$DATE,1,2))
 y$dumm <- as.numeric(y$YEAR) %% 100 > 1950%%100
@@ -61,4 +64,9 @@ plot(srad_all$srad[1:365], ty='l', ylab="Solar radiation [MJ / day]", xlab="Day 
 lines(wth$SRAD[1:365], col='red')
 legend(x=250,y=28,lty=c(1,1),cex=0.75,col=c("black","red"),legend=c("estimated","original"))
 
+#x-y scatterplot
+plot(srad_all$srad[1:365], wth$SRAD[1:365], xlab='Estimated srad [MJ/day]', ylab='Observed srad [MJ/day]')
+abline(0,1)
 
+#correlation test
+cor.test(srad_all$srad[1:365], wth$SRAD[1:365])
