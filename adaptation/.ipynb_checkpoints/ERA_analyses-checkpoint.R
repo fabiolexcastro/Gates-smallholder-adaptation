@@ -176,5 +176,21 @@ plot(maxsim_m,add=T,legend=F,zlim=c(0,1),breaks=seq(0,1,by=0.2),col=rev(terrain.
 plot(sh_ctry, add=T)
 points(pdata_n$Lon, pdata_n$Lat, pch=20, col="red", cex=1)
 
+#load and plot stuff
+rspos <- raster(paste(pr_odir,"/max_similarity_pos_maizeareas.tif",sep=""))
+rsneg <- raster(paste(pr_odir,"/max_similarity_neg_maizeareas.tif",sep=""))
 
+png(paste(pr_odir,"/max_similarity_pos_maizeareas.png",sep=""),width=8,height=7,units='in',res=300,pointsize=12)
+par(mar=c(3,3,1,1))
+plot(pdata$Lon, pdata$Lat, pch=20, col="white",xlab="",ylab="")
+plot(rspos,add=T,legend=F,zlim=c(0,1),breaks=seq(0,1,by=0.1),col=rev(terrain.colors(12)))
+plot(sh_ctry, add=T)
+dev.off()
+
+png(paste(pr_odir,"/max_similarity_neg_maizeareas.png",sep=""),width=8,height=7,units='in',res=300,pointsize=12)
+par(mar=c(3,3,1,1))
+plot(pdata$Lon, pdata$Lat, pch=20, col="white",xlab="",ylab="")
+plot(rsneg,add=T,legend=F,zlim=c(0,1),breaks=seq(0,1,by=0.1),col=rev(terrain.colors(12)))
+plot(sh_ctry, add=T)
+dev.off()
 
