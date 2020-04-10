@@ -24,7 +24,7 @@ calc_stats <- function(x) {
     #calculate statistics
     rsmean <- calc(x, fun=mean, na.rm=T)
     rsstd <- calc(x, fun=sd, na.rm=T)
-    rscv <- rsmean/rsstd * 100
+    rscv <- rsstd/rsmean * 100
     q95fun <- function(x){quantile(x, probs = .95, na.rm=TRUE)}
     q05fun <- function(x){quantile(x, probs = .05, na.rm=TRUE)}
     rs95 <- calc(x, fun=q95fun, forceapply=T)
