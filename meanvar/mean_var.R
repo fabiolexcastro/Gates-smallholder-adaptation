@@ -1,4 +1,5 @@
 #JRV - calculate mean and variability indicators for given layer
+#April 2020
 
 #working directory
 wd <- "~/work"
