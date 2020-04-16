@@ -1,0 +1,1 @@
+#wget -r -np -nH --cut-dirs=3 -R index.html https://files.isric.org/soilgrids/data/aggregated/5km/

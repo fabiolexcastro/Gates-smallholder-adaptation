@@ -9,6 +9,8 @@ library(analogues)
 library(rgdal)
 library(raster)
 library(maptools); data(wrld_simpl)
+library(data.table)
+library(Hmisc)
 
 #read ERA data file
 all_data <- read.csv(paste(cimdir,"/ERA_Test_Data.csv",sep=""))
@@ -50,6 +52,41 @@ msk[which(!is.na(msk[]))] <- 1
 #   4. Green Manure (37)
 #   5. Water Harvesting (35)
 
+#4) Aggregate Data up to Site Level
+ROUND<-4
+Aggegrate.By<-c("Site.ID","PrName")
+
+#4.1) Identify outliers
+Out.Calc<-function(Vals){
+    return((Vals < quantile(Vals)[2] - 3 *  IQR(Vals)  | Vals > quantile(Vals)[4] + 3 * IQR(Vals)))
+}
+
+Niche.Data <- as.data.table(all_data)
+Outliers<-unlist(Niche.Data[,R:=1:nrow(Niche.Data)][,list(Outliers=list(R[Out.Calc(yi)])), by=Aggegrate.By][,Outliers])
+
+  # 4.2) Calculate Weighted mean effect size by practice and site combination
+  Weight.Group<-unique(c("Code",Aggegrate.By))
+
+  Niche.Data.Sites<-Niche.Data[!Outliers
+                    ][,N.Obs.Study:=.N,by=Weight.Group # Recalculate Weightings by study within obervations grouping 
+                      ][,Weight.Study:=(Rep^2/(2*Rep))/N.Obs.Study # Recalculate Weightings
+                        ][,list(Observations=.N,
+                                Studies=length(unique(Code)),
+                                Sites=length(unique(Site.ID)),
+                                Lat=mean(Latitude),
+                                Long=mean(Longitude),
+                                RR=round(weighted.mean(yi,Weight.Study,na.rm=T),ROUND),
+                                RR.sd=suppressWarnings(round(abs(wtd.var(yi,Weight.Study,na.rm=T))^0.5,ROUND))
+                        ),
+                        by=Aggegrate.By  # this 
+                        ][,pc:=round(100*exp(RR)-100,ROUND-1)
+                          ][,pc.sd:=round(100*exp(RR.sd)-100,ROUND-1)]
+  Niche.Data.Sites$Label <- paste(Niche.Data.Sites$Site.ID, Niche.Data.Sites$PrName)
+
+
+
+
+####
 prname <- "Mulch"
 pdata <- all_data[which(all_data$PrName == prname),]
 pdata <- pdata[which(!is.na(pdata$Latitude)),]
