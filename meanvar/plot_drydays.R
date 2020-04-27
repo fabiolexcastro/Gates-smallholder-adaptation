@@ -78,7 +78,7 @@ g1 <- ggplot(rs_vls)  +
   geom_tile(aes(x = x, y =  y, fill = value)) +
   scale_fill_gradientn(colours = plt, 
                        na.value = 'white',
-                       limits=lims,
+                       limits=c(0,1),
                        breaks=brks) +
   geom_polygon(data=sh, aes(x=long, y=lat, group=group), 
                fill=NA,color="black", size=0.5) +
