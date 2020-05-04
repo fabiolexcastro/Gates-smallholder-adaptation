@@ -1,0 +1,43 @@
+crop ,full name,name
+1,wheat,whea
+2,rice,rice
+3,maize,maiz
+4,barley,barl
+5,pearl millet,pmil
+6,small millet,smil
+7,sorghum,sorg
+8,other cereals,ocer
+9,potato,pota
+10,sweet potato,swpo
+11,yams,yams
+12,cassava,cass
+13,other roots,orts
+14,bean,bean
+15,chickpea,chic
+16,cowpea,cowp
+17,pigeonpea,pige
+18,lentil,lent
+19,other pulses,opul
+20,soybean,soyb
+21,groundnut,grou
+22,coconut,cnut
+23,oilpalm,oilp
+24,sunflower,sunf
+25,rapeseed,rape
+26,sesameseed,sesa
+27,other oil crops,ooil
+28,sugarcane,sugc
+29,sugarbeet,sugb
+30,cotton,cott
+31,other fibre crops ofib,non-food
+32,arabica coffee,acof
+33,robusta coffee,rcof
+34,cocoa,coco
+35,tea,teas
+36,tobacco,toba
+37,banana,bana
+38,plantain,plnt
+39,tropical fruit,trof
+40,temperate fruit,temf
+41,vegetables,vege
+42,rest of crops,rest
