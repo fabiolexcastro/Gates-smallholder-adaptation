@@ -31,12 +31,12 @@ myFunction <- function(x, st, ed){
 my_function <- function(climate, cln, map, rcp, yrs, thr){ 
   
   # Proof
-  climate <- crn_r85_50s
-  cln <- 'Maize'
-  map <- 'MAIZ'
-  rcp <- 'rcp85'
-  yrs <- '2050s'
-  thr <- 28.6
+  # climate <- crn_r85_50s
+  # cln <- 'Maize'
+  # map <- 'MAIZ'
+  # rcp <- 'rcp85'
+  # yrs <- '2050s'
+  # thr <- 28.6
   
   print('To start... ---> Extracting the areas for the crop')
   map_rst <- grep(map, map_spm, value = TRUE) %>% raster() 
@@ -121,10 +121,8 @@ my_function <- function(climate, cln, map, rcp, yrs, thr){
 
 # Prepare data -----------------------------------------------------------------------------------------------------------
 
-# Base shape
+# Base files
 shp <- shapefile('../data/shp/base/continents.shp')
-
-# Base mask
 msk <- raster::raster('../input/worldclim/future/rcp45_30s/tmean_1.tif') * 0
 
 # Load climate
@@ -151,11 +149,43 @@ lbl <- lbl %>% mutate(label = factor(label, levels = c('Temperature flips', 'Saf
 jln <- read_csv('../tbl/julian.csv')
 
 # Apply the function ------------------------------------------------------
-for(i in 1:4){
-  my_function(cln = 'Cassava', 
-              map = 'CASS', 
+climate_list <- list(crn_r45_30s, crn_r45_50s, crn_r85_30s, crn_r85_50s)
+rcps <- c('rcp45', 'rcp45', 'rcp85', 'rcp85')
+years <- c('2030s', '2050s', '2030s', '2050s')
+
+for(i in 1:3){
+  print(i)
+  my_function(climate = climate_list[[i]],
+              cln = 'Maize', 
+              map = 'MAIZ', 
               rcp = rcps[i], 
-              yrs = year[i], 
-              ftr_rst = clim[i], 
-              thr = 32)    
-} 
+              yrs = years[i], 
+              thr = 28.6)    
+}
+
+
+require(doSNOW)
+require(parallel)
+require(foreach)
+
+cl <- makeCluster(4)
+registerDoSNOW(cl)
+
+foreach(i = 1:4, .packagues = c('raster', 'rgdal', 'rgeos', 'stringr', 'tidyverse'), .verbose = TRUE) %dopar% {
+  
+  print(i)
+  my_function(climate = climate_list[[i]], 
+              cln = 'Maize',
+              map = 'MAIZ',
+              rcp = rcps[i],
+              yrs = years[i],
+              thr = 28.6)
+  
+}
+
+stopCluster(cl)
+
+
+
+
+
