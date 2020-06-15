@@ -93,4 +93,4 @@ rm(rstk); gc()
 
 #tar.bz2 everything
 setwd(hdir)
-system(paste("tar -cjvf ", lname, "_", period, ".tar.bz2 ", lname, "_", period), sep="")
+system(paste("tar -cjvf ", lname, "_", period, ".tar.bz2 ", lname, "_", period, sep=""))
