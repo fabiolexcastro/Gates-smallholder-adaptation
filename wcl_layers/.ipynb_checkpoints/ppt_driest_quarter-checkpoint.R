@@ -14,10 +14,10 @@ adir <- paste(hdir,"/ppt_driest_quarter",sep="")
 if (!file.exists(adir)) {dir.create(adir)}
 
 #given classes
-m <- c(0, 40, 1,  
-       40, 60, 2,
-       60, 80, 3,
-       80, 100, 4)
+m <- c(0, 20, 1,  
+       20, 80, 2,
+       80, 320, 3,
+       320, 3000, 4)
 rclmat <- matrix(m, ncol=3, byrow=TRUE)
 
 #get tmax, tmin, and prec from WCLv1.4
@@ -73,6 +73,7 @@ for (sce in c(4.5, 8.5)) {
     }
 }
 
+#tar bz2 everything
 setwd(hdir)
 system("tar -cjvf ppt_driest_quarter.tar.bz2 ppt_driest_quarter")
 

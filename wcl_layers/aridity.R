@@ -195,3 +195,4 @@ for (sce in c(4.5, 8.5)) {
 
 setwd(adir)
 system("tar -cjvf aridity_thornthwaite.tar.bz2 aridity_thornthwaite_*.tif")
+system("mv aridity_thornthwaite.tar.bz2 ./../.")

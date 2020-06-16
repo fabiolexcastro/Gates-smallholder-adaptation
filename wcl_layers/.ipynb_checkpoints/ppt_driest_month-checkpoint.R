@@ -14,16 +14,16 @@ adir <- paste(hdir,"/ppt_driest_month",sep="")
 if (!file.exists(adir)) {dir.create(adir)}
 
 #given classes
-m <- c(0, 40, 1,  
-       40, 60, 2,
-       60, 80, 3,
-       80, 100, 4)
+m <- c(0, 10, 1,  
+       10, 30, 2,
+       30, 100, 3,
+       100, 1000, 4)
 rclmat <- matrix(m, ncol=3, byrow=TRUE)
 
 #get tmax, tmin, and prec from WCLv1.4
 if (!file.exists(paste(adir,"/pdm_hist.tif",sep=""))) {
     pdm_rs <- getData('worldclim', var='bio', res=2.5, path=adir)
-    pdm_rs <- pdm_rs[["bio17"]]
+    pdm_rs <- pdm_rs[["bio14"]]
     pdm_rs <- writeRaster(pdm_rs, paste(adir,"/pdm_hist.tif",sep=""))
 } else {
     pdm_rs <- raster(paste(adir,"/pdm_hist.tif",sep=""))
@@ -48,7 +48,7 @@ for (sce in c(4.5, 8.5)) {
             #get CMIP5 bioclim data from CCAFS-Climate
             if (!file.exists(paste(adir,"/pdm_fut_m",k,"_",yr,"_rcp",sce,".tif",sep=""))) {
                 pdm_rs <- getCMIP5(var="bio", rcp=sce, model=k, year=yr, res=2.5, path=adir)
-                pdm_rs <- pdm_rs[["bio_17"]]
+                pdm_rs <- pdm_rs[["bio_14"]]
                 pdm_rs <- writeRaster(pdm_rs, paste(adir,"/pdm_fut_m",k,"_",yr,"_rcp",sce,".tif",sep=""))
             } else {
                 pdm_rs <- raster(paste(adir,"/pdm_fut_m",k,"_",yr,"_rcp",sce,".tif",sep=""))
@@ -73,6 +73,7 @@ for (sce in c(4.5, 8.5)) {
     }
 }
 
+#tar bz2 everything
 setwd(hdir)
 system("tar -cjvf ppt_driest_month.tar.bz2 ppt_driest_month")
 
