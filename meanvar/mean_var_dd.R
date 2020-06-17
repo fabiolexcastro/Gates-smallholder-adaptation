@@ -221,4 +221,4 @@ for (i in 1:12) {
 
 #tar.bz2 everything
 setwd(hdir)
-system(paste("tar -cjvf ", lname, "_", period, ".tar.bz2 ", lname, "_", period), sep="")
+system(paste("tar -cjvf ", lname, "_", period, ".tar.bz2 ", lname, "_", period, sep=""))

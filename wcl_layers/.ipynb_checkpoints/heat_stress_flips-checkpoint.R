@@ -29,6 +29,12 @@ crop_list <- unique(unlist(lapply(strsplit(crop_list, split="_", fixed=TRUE),
 msk <- stack(list.files(lydir, pattern="\\.tif", full.names=TRUE)[1])
 msk[which(!is.na(msk[]))] <- 1
 
+#crop area
+carea <- stack(stack(list.files(lydir, pattern="heat_stress_thr_", full.names=TRUE)))
+carea <- mean(carea, na.rm=T)
+carea[which(carea[] == 0)] <- NA
+carea[which(!is.na(carea[]))] <- 1
+
 #scenario and period list
 sce_list <- expand.grid(rcp=c("rcp45","rcp85"),period=c("2050s","2030s"))
 
@@ -74,19 +80,20 @@ for (i in 1:nrow(sce_list)) {
     #stack and compute sum
     rsum1 <- stack(rsum1) %>%
                 sum(., na.rm=T) %>%
-                mask(., msk) %>%
+                mask(., carea) %>%
                 writeRaster(., filename=paste(lydir, "/heat_stress_hotspots_flipping_",sce,"_",per,".tif",sep=""), overwrite=TRUE)
     rsum2 <- stack(rsum2) %>%
                 sum(., na.rm=TRUE) %>%
-                mask(., msk) %>%
+                mask(., carea) %>%
                 writeRaster(., filename=paste(lydir, "/heat_stress_hotspots_already_",sce,"_",per,".tif",sep=""), overwrite=TRUE)
     rsum3 <- stack(rsum3) %>%
                 sum(., na.rm=TRUE) %>%
-                mask(., msk) %>%
+                mask(., carea) %>%
                 writeRaster(., filename=paste(lydir, "/heat_stress_hotspots_combined_",sce,"_",per,".tif",sep=""), overwrite=TRUE)
 }
 
 #tar.bz2 everything
 setwd(hdir)
+system(paste("rm -f ", lname, ".tar.bz2", sep=""))
 system(paste("tar -cjvf ", lname, ".tar.bz2 ", lname, sep=""))
 
