@@ -15,7 +15,7 @@ vr <- 3
 #   3. Agroforestry Pruning (38)
 #   4. Green Manure (37)
 #   5. Water Harvesting (35)
-prname <- "Water Harvesting"
+prname <- "Green Manure"
 
 #load library
 library(analogues)
@@ -369,54 +369,43 @@ g1 <- ggplot(rs_vls)  +
 ggsave(plot = g1, filename = paste(pr_odir,"/plot_similarity_overall.png",sep=""), units = 'in', width = 9, height = 9, dpi = 300)
 
 
-####
-##run all negative points
-#simres_n <- run_points(pdata_n, etype="neg")
-#
-##pretty plot 
-##first mask to Africa shapefile
-#rsp <- raster::mask(simres_n[[2]], sh_ctry)
-#
-##to points (for use of geom_tile)
-#rs_vls <- rasterToPoints(rsp) %>% 
-#    as_tibble() %>% 
-#    setNames(c('x', 'y', 'value'))
-#
-##plot
-#g1 <- ggplot(rs_vls)  +
-#    geom_tile(aes(x = x, y =  y, fill = value)) +
-#    scale_fill_divergent(low='tomato', 
-#                         mid = 'lemonchiffon', 
-#                         high = 'darkcyan', 
-#                         midpoint=0.5, 
-#                         na.value="white",
-#                         limits=c(0,1)) +
-#    coord_fixed(ratio=1,xlim = c(-20,60), ylim = c(-40,40)) +
-#    #coord_equal() +
-#    geom_polygon(data=sh_ctry, 
-#                aes(x=long, y=lat, group=group), 
-#                color="grey20", size=0.25, fill=NA) +
-#    theme_bw() +
-#    labs(x = 'Longitude', y = 'Latitude', fill = "Similarity", caption = 'Smallholder Adaptation Atlas') +
-#    theme(panel.grid.major=element_blank(),
-#          panel.grid.minor=element_blank(),
-#          plot.background=element_blank(),
-#          strip.background = element_rect(color="white", fill="white"),
-#          strip.text = element_text(size=12, face = "bold"))
-#ggsave(plot = g1, filename = paste(pr_odir,"/plot_neg_similarity_overall.png",sep=""), units = 'in', width = 9, height = 9, dpi = 300)
-#
-##simple plots
-#plot(simres_p[[2]],zlim=c(0,1),breaks=seq(0,1,by=0.25),col=rev(terrain.colors(4)))
-#plot(sh_ctry, add=T)
+###
+#run all negative points
+simres_n <- run_points(pdata_n, etype="neg")
 
-########################################################################
-########################################################################
-#correct by similarity of negative outcomes
-#x1 <- simres_p[[2]]
-#x2 <- simres_n[[2]]
-#x3 <- x1/(1+x2) #x3 <- x1/10^x2 #x3 <- x1/(1+x2) #x3 <- x1/exp(x2)
-#x3 <- (x3 - min(x3[],na.rm=T)) / (max(x3[],na.rm=T) - min(x3[],na.rm=T))
-#plot(x3,zlim=c(0,1),breaks=seq(0,1,by=0.2),col=rev(terrain.colors(5)))
-#plot(sh_ctry, add=T)
+#pretty plot 
+#first mask to Africa shapefile
+rsp <- raster::mask(simres_n[[2]], sh_ctry)
 
+#to points (for use of geom_tile)
+rs_vls <- rasterToPoints(rsp) %>% 
+    as_tibble() %>% 
+    setNames(c('x', 'y', 'value'))
+
+#plot
+g1 <- ggplot(rs_vls)  +
+    geom_tile(aes(x = x, y =  y, fill = value)) +
+    scale_fill_divergent(low='tomato', 
+                         mid = 'lemonchiffon', 
+                         high = 'darkcyan', 
+                         midpoint=0.5, 
+                         na.value="white",
+                         limits=c(0,1)) +
+    coord_fixed(ratio=1,xlim = c(-20,60), ylim = c(-40,40)) +
+    #coord_equal() +
+    geom_polygon(data=sh_ctry, 
+                aes(x=long, y=lat, group=group), 
+                color="grey20", size=0.25, fill=NA) +
+    theme_bw() +
+    labs(x = 'Longitude', y = 'Latitude', fill = "Similarity", caption = 'Smallholder Adaptation Atlas') +
+    theme(panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),
+          plot.background=element_blank(),
+          strip.background = element_rect(color="white", fill="white"),
+          strip.text = element_text(size=12, face = "bold"))
+ggsave(plot = g1, filename = paste(pr_odir,"/plot_neg_similarity_overall.png",sep=""), units = 'in', width = 9, height = 9, dpi = 300)
+
+#simple plots
+plot(simres_p[[2]],zlim=c(0,1),breaks=seq(0,1,by=0.25),col=rev(terrain.colors(4)))
+plot(sh_ctry, add=T)
 

@@ -21,8 +21,9 @@ crop_list <- unique(unlist(lapply(strsplit(crop_list, split="_", fixed=TRUE),
                                   FUN=function(x) {
                                         if (length(x)==7) {
                                             return(paste(x[4],"_",x[5],sep=""))
-                                        } else {}
+                                        } else {
                                             return(x[4])
+                                        }
                                       })))
 
 #mask
