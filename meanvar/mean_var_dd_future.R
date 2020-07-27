@@ -1,5 +1,5 @@
 #JRV - calculate mean and variability indicators for number of dry days
-#April 2020
+#July 2020
 
 #working directory
 wd <- "~/work"
@@ -11,18 +11,24 @@ library(tidyverse)
 
 #layer name
 lname <- "dry_days"
-period <- "hist"
+period <- "50s"
+rcp <- "rcp45"
 
 #years
-yi <- 1981
-yf <- 2019
+if (period == "30s") {
+    yi <- 2020
+    yf <- 2049
+} else {
+    yi <- 2040
+    yf <- 2069
+}
 
 #Africa mask
 msk <- raster(paste(hdir,"/chirps_cv/cvr_africa.tif",sep=""))
 
 #output base name
-obdir <- paste(hdir,"/",lname,"_",period,"/yearly",sep="")
-obname <- paste(lname,"_",yi,"_",yf,"_", sep="")
+obdir <- paste(hdir,"/",lname,"_future/yearly/",lname,"_",rcp,"_",period,sep="")
+obname <- paste(lname,"_",rcp,"_",period,"_",yi,"_",yf,"_", sep="")
 
 #given classes
 m <- c(0, 15, 1,  
@@ -31,32 +37,23 @@ m <- c(0, 15, 1,
        25, 35, 4)
 rclmat <- matrix(m, ncol=3, byrow=TRUE)
 
-#replace .asc by .tif files
-if (file.exists(paste(obdir,"/",lname,"_",yi,".asc",sep=""))) {
-    #load all yearly layers, compute long-term mean, c.v. and 95th percentile
-    rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,".asc",sep=""))
-
-    #write all these rasters as GTiff
-    for (i in 1:nlyr(rstk)) {
-        raster::writeRaster(rstk[[i]], 
-                           filename=file.path(path.expand(obdir), paste(names(rstk)[i],".tif",sep="")),
-                           overwrite=TRUE)
+#rename files (dryDays to dry_days)
+flist <- list.files(obdir, pattern="\\.tif")
+setwd(obdir)
+for (fl in flist) {
+    if (file.exists(fl)) {
+        nfl <- gsub("dryDays", lname, fl)
+        system(paste("mv ", fl, " ", nfl, sep=""))
     }
-
-    #reload stack from GTiff files
-    rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,".tif",sep=""))
-
-    #remove all .asc files
-    setwd(obdir)
-    system("rm -f *.asc")
-    setwd("~")
-} else {
-    rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,".tif",sep=""))
 }
+setwd("~")
+
+#load data
+rstk <- stack(paste(obdir, "/", lname, "_", rcp, "_", period, "_", yi:yf, ".tif", sep="")) %>%
+        raster::resample(., msk, method="ngb")
 
 #calculate monthly average
 rstk <- rstk / 12
-#rstk <- crop(rstk, msk)
 
 #calculate statistics
 #mean
@@ -66,18 +63,20 @@ rsmean <- raster::writeRaster(rsmean,
                              overwrite=TRUE)
 
 #coefficient of variation
-rsstd <- raster::calc(rstk, fun=sd, na.rm=TRUE)
-rscv <- rsstd / rsmean * 100
-rscv <- raster::writeRaster(rscv, 
-                           filename=file.path(path.expand(obdir), paste(obname,"cv.tif",sep="")), 
-                           overwrite=TRUE)
+if (!file.exists(file.path(path.expand(obdir), paste(obname,"cv.tif",sep="")))) {
+    rscv <- raster::calc(rstk, fun=function(x) {sd(x,na.rm=TRUE) / mean(x,na.rm=TRUE) * 100},
+                         filename=file.path(path.expand(obdir), paste(obname,"cv.tif",sep="")), 
+                         overwrite=TRUE)
+}
 
 #median (2.5 in 5 years)
-rsmedian <- raster::calc(rstk, fun=function(x) {quantile(x, probs=0.5, na.rm=T)},
-                            filename=file.path(path.expand(obdir), paste(obname,"p50.tif",sep="")),
-                            overwrite=TRUE)
+if (!file.exists(file.path(path.expand(obdir), paste(obname,"p50.tif",sep="")))) {
+    rsmedian <- raster::calc(rstk, fun=function(x) {quantile(x, probs=0.5, na.rm=TRUE)},
+                             filename=file.path(path.expand(obdir), paste(obname,"p50.tif",sep="")),
+                             overwrite=TRUE)
+}
 
-rm(list=c("rsmean","rsstd","rscv","rsmedian")); gc(T)
+rm(list=c("rsmean","rscv","rsmedian")); gc(T)
 
 #write probability rasters (upper and lower)
 #2 in 5 years (probability of 40%)
@@ -117,35 +116,28 @@ rm(rstk); gc()
 ################################################################
 #now calculate for each month
 #output base name
-obdir <- paste(hdir,"/",lname,"_",period,"/monthly",sep="")
+obdir <- paste(hdir,"/",lname,"_future/monthly/",lname,"_",rcp,"_",period,sep="")
 obname <- paste(lname,"_",yi,"_",yf,"_", sep="")
 
-for (i in 1:12) {
+#rename files (dryDays to dry_days)
+flist <- list.files(obdir, pattern="dryDays_")
+setwd(obdir)
+for (fl in flist) {
+    if (file.exists(fl)) {
+        nfl <- gsub("dryDays", lname, fl)
+        system(paste("mv ", fl, " ", nfl, sep=""))
+    }
+}
+setwd("~")
+
+#function to parallelise
+run_month <- function(i, obdir, obname, lname, yi, yf, msk) {
     #i <- 1
     cat("processing month=",i,"\n")
     
-    #replace .asc by .tif files
-    if (file.exists(paste(obdir,"/",lname,"_",yi,"_",i,".asc",sep=""))) {
-        #load all yearly layers, compute long-term mean, c.v. and 95th percentile
-        rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,"_",i,".asc",sep=""))
-    
-        #write all these rasters as GTiff
-        for (j in 1:nlyr(rstk)) {
-            raster::writeRaster(rstk[[j]], 
-                               filename=file.path(path.expand(obdir), paste(names(rstk)[j],".tif",sep="")),
-                               overwrite=TRUE)
-        }
-    
-        #reload stack from GTiff files
-        rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,"_",i,".tif",sep=""))
-    
-        #remove all .asc files
-        setwd(obdir)
-        system(paste("rm -f *_",i,".asc",sep=""))
-        setwd("~")
-    } else {
-        rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,"_",i,".tif",sep=""))
-    }
+    #load rasters for all years
+    rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,"_",i,".tif",sep="")) %>%
+            raster::resample(., msk, method="ngb")
     
     #calculate statistics
     #mean
@@ -209,6 +201,23 @@ for (i in 1:12) {
     rm(rstk); gc()
 }
 
+#parallelization
+require(doSNOW)
+require(parallel)
+require(foreach)
+
+cl <- makeCluster(6)
+registerDoSNOW(cl)
+
+foreach(i = 1:12, .packages = c('raster', 'rgdal', 'sp', 'tidyverse'), .verbose = TRUE) %dopar% {
+  print(i)
+  run_month(i, obdir, obname, lname, yi, yf, msk)
+}
+
+stopCluster(cl)
+
+
 #tar.bz2 everything
 setwd(hdir)
-system(paste("tar -cjvf ", lname, "_", period, ".tar.bz2 ", lname, "_", period, sep=""))
+system(paste("tar -cjvf ", lname, "_future.tar.bz2 ", lname, "_future", sep=""))
+

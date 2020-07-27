@@ -6,7 +6,8 @@ wd <- "~/work"
 hdir <- paste(wd,"/hazard_layers",sep="")
 
 #libraries
-library(terra)
+library(raster)
+library(tidyverse)
 
 #layer name
 lname <- "dry_days"
@@ -17,7 +18,7 @@ yi <- 1981
 yf <- 2019
 
 #Africa mask
-msk <- rast(paste(hdir,"/chirps_cv/cvr_africa.tif",sep=""))
+msk <- raster(paste(hdir,"/chirps_cv/cvr_africa.tif",sep=""))
 
 #output base name
 obdir <- paste(hdir,"/",lname,"_",period,"/yearly",sep="")
@@ -33,51 +34,48 @@ rclmat <- matrix(m, ncol=3, byrow=TRUE)
 #replace .asc by .tif files
 if (file.exists(paste(obdir,"/",lname,"_",yi,".asc",sep=""))) {
     #load all yearly layers, compute long-term mean, c.v. and 95th percentile
-    rstk <- rast(paste(obdir,"/",lname,"_",yi:yf,".asc",sep=""))
+    rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,".asc",sep=""))
 
     #write all these rasters as GTiff
     for (i in 1:nlyr(rstk)) {
-        terra::writeRaster(rstk[[i]], 
+        raster::writeRaster(rstk[[i]], 
                            filename=file.path(path.expand(obdir), paste(names(rstk)[i],".tif",sep="")),
-                           overwrite=TRUE,
-                           wopt=list(gdal=c("COMPRESS=LZW")))
+                           overwrite=TRUE)
     }
 
     #reload stack from GTiff files
-    rstk <- rast(paste(obdir,"/",lname,"_",yi:yf,".tif",sep=""))
+    rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,".tif",sep=""))
 
     #remove all .asc files
     setwd(obdir)
     system("rm -f *.asc")
     setwd("~")
 } else {
-    rstk <- rast(paste(obdir,"/",lname,"_",yi:yf,".tif",sep=""))
+    rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,".tif",sep=""))
 }
 
 #calculate monthly average
 rstk <- rstk / 12
+#rstk <- crop(rstk, msk)
 
 #calculate statistics
 #mean
 rsmean <- mean(rstk, na.rm=TRUE)
-rsmean <- terra::writeRaster(rsmean, 
+rsmean <- raster::writeRaster(rsmean, 
                              filename=file.path(path.expand(obdir), paste(obname,"mean.tif",sep="")), 
-                             overwrite=TRUE,
-                             wopt=list(gdal=c("COMPRESS=LZW")))
+                             overwrite=TRUE)
 
 #coefficient of variation
-rsstd <- terra::app(rstk, fun=sd, na.rm=TRUE)
+rsstd <- raster::calc(rstk, fun=sd, na.rm=TRUE)
 rscv <- rsstd / rsmean * 100
-rscv <- terra::writeRaster(rscv, 
+rscv <- raster::writeRaster(rscv, 
                            filename=file.path(path.expand(obdir), paste(obname,"cv.tif",sep="")), 
-                           overwrite=TRUE,
-                           wopt=list(gdal=c("COMPRESS=LZW")))
+                           overwrite=TRUE)
 
 #median (2.5 in 5 years)
-rsmedian <- terra::quantile(rstk, probs=0.5, na.rm=TRUE, 
+rsmedian <- raster::calc(rstk, fun=function(x) {quantile(x, probs=0.5, na.rm=T)},
                             filename=file.path(path.expand(obdir), paste(obname,"p50.tif",sep="")),
-                            overwrite=TRUE,
-                            wopt=list(gdal=c("COMPRESS=LZW")))
+                            overwrite=TRUE)
 
 rm(list=c("rsmean","rsstd","rscv","rsmedian")); gc(T)
 
@@ -95,19 +93,17 @@ for (pval in c(0.4, 0.2, 0.1, 0.05, 0.02, 0.01)) {
     fn_u <- file.path(path.expand(obdir), 
                       paste(obname,"p",formatC(pval*100, width = 2, format = "d", flag = "0"),"u.tif",sep=""))
     if (!file.exists(fn_u)) {
-        rs_u <- terra::app(rstk, fun=function(x) {quantile(x, probs=pval, na.rm=T)},
+        rs_u <- raster::calc(rstk, fun=function(x) {quantile(x, probs=pval, na.rm=T)},
                            filename=fn_u,
-                           overwrite=TRUE,
-                           wopt=list(gdal=c("COMPRESS=LZW")))
+                           overwrite=TRUE)
     }
     
     fn_l <- file.path(path.expand(obdir), 
                       paste(obname,"p",formatC(pval*100, width = 2, format = "d", flag = "0"),"l.tif",sep=""))
     if (!file.exists(fn_l)) {
-        rs_l <- terra::app(rstk, fun=function(x) {quantile(x, probs=(1-pval), na.rm=T)},
+        rs_l <- raster::calc(rstk, fun=function(x) {quantile(x, probs=(1-pval), na.rm=T)},
                                filename=fn_l,
-                               overwrite=TRUE,
-                               wopt=list(gdal=c("COMPRESS=LZW")))
+                               overwrite=TRUE)
     }
     rm(list=c("rs_u","rs_l","fn_u","fn_l"))
 }
@@ -131,56 +127,52 @@ for (i in 1:12) {
     #replace .asc by .tif files
     if (file.exists(paste(obdir,"/",lname,"_",yi,"_",i,".asc",sep=""))) {
         #load all yearly layers, compute long-term mean, c.v. and 95th percentile
-        rstk <- rast(paste(obdir,"/",lname,"_",yi:yf,"_",i,".asc",sep=""))
+        rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,"_",i,".asc",sep=""))
     
         #write all these rasters as GTiff
         for (j in 1:nlyr(rstk)) {
-            terra::writeRaster(rstk[[j]], 
+            raster::writeRaster(rstk[[j]], 
                                filename=file.path(path.expand(obdir), paste(names(rstk)[j],".tif",sep="")),
-                               overwrite=TRUE,
-                               wopt=list(gdal=c("COMPRESS=LZW")))
+                               overwrite=TRUE)
         }
     
         #reload stack from GTiff files
-        rstk <- rast(paste(obdir,"/",lname,"_",yi:yf,"_",i,".tif",sep=""))
+        rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,"_",i,".tif",sep=""))
     
         #remove all .asc files
         setwd(obdir)
         system(paste("rm -f *_",i,".asc",sep=""))
         setwd("~")
     } else {
-        rstk <- rast(paste(obdir,"/",lname,"_",yi:yf,"_",i,".tif",sep=""))
+        rstk <- stack(paste(obdir,"/",lname,"_",yi:yf,"_",i,".tif",sep=""))
     }
     
     #calculate statistics
     #mean
     if (!file.exists(file.path(path.expand(obdir), paste(obname,i,"_mean.tif",sep="")))) {
         rsmean <- mean(rstk, na.rm=TRUE)
-        rsmean <- terra::writeRaster(rsmean, 
+        rsmean <- raster::writeRaster(rsmean, 
                                      filename=file.path(path.expand(obdir), paste(obname,i,"_mean.tif",sep="")), 
-                                     overwrite=TRUE,
-                                     wopt=list(gdal=c("COMPRESS=LZW")))
+                                     overwrite=TRUE)
         rm(rsmean)
     }
     
     #coefficient of variation
     if (!file.exists(file.path(path.expand(obdir), paste(obname,i,"_cv.tif",sep="")))) {
-        rsmean <- rast(paste(file.path(path.expand(obdir), paste(obname,i,"_mean.tif",sep=""))))
-        rsstd <- terra::app(rstk, fun=sd, na.rm=TRUE)
+        rsmean <- raster(paste(file.path(path.expand(obdir), paste(obname,i,"_mean.tif",sep=""))))
+        rsstd <- raster::calc(rstk, fun=sd, na.rm=TRUE)
         rscv <- rsstd / rsmean * 100
-        rscv <- terra::writeRaster(rscv, 
+        rscv <- raster::writeRaster(rscv, 
                                    filename=file.path(path.expand(obdir), paste(obname,i,"_cv.tif",sep="")), 
-                                   overwrite=TRUE,
-                                   wopt=list(gdal=c("COMPRESS=LZW")))
+                                   overwrite=TRUE)
         rm(list=c("rsstd","rsmean","rscv"))
     }
     
     #median (2.5 in 5 years)
     if (!file.exists(file.path(path.expand(obdir), paste(obname,i,"_p50.tif",sep="")))) {
-        rsmedian <- terra::app(rstk, fun=median, na.rm=TRUE, 
+        rsmedian <- raster::calc(rstk, fun=median, na.rm=TRUE, 
                                filename=file.path(path.expand(obdir), paste(obname,i,"_p50.tif",sep="")),
-                               overwrite=TRUE,
-                               wopt=list(gdal=c("COMPRESS=LZW")))
+                               overwrite=TRUE)
         rm(rsmedian)
     }
     
@@ -198,19 +190,17 @@ for (i in 1:12) {
         fn_u <- file.path(path.expand(obdir), 
                           paste(obname,i,"_p",formatC(pval*100, width = 2, format = "d", flag = "0"),"u.tif",sep=""))
         if (!file.exists(fn_u)) {
-            rs_u <- terra::app(rstk, fun=function(x) {quantile(x, probs=pval, na.rm=T)},
+            rs_u <- raster::calc(rstk, fun=function(x) {quantile(x, probs=pval, na.rm=T)},
                                filename=fn_u,
-                               overwrite=TRUE,
-                               wopt=list(gdal=c("COMPRESS=LZW")))
+                               overwrite=TRUE)
         }
         
         fn_l <- file.path(path.expand(obdir), 
                           paste(obname,i,"_p",formatC(pval*100, width = 2, format = "d", flag = "0"),"l.tif",sep=""))
         if (!file.exists(fn_l)) {
-            rs_l <- terra::app(rstk, fun=function(x) {quantile(x, probs=(1-pval), na.rm=T)},
+            rs_l <- raster::calc(rstk, fun=function(x) {quantile(x, probs=(1-pval), na.rm=T)},
                                filename=fn_l,
-                               overwrite=TRUE,
-                               wopt=list(gdal=c("COMPRESS=LZW")))
+                               overwrite=TRUE)
         }
         rm(list=c("rs_u","rs_l","fn_u","fn_l"))
     }

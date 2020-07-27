@@ -35,16 +35,16 @@ cal_df <- data.frame(
                   "coconut","cotton","cowpea","generic","groundnut","lentil","maiz_s1","maiz_s2","oilpalm",
                   "pearl_millet","pigeonpea","plantain","potato","rapeseed","rice_s1","rice_s2","robusta_coffee",
                   "sesameseed","small_millet","sorghum_s1","sorghum_s2","sugar_cane","sugarbeet","sunflower",
-                  "sweet_potato","teas","tobacco","wheat_s1","wheat_s2","yams"),
+                  "sweet_potato","teas","tobacco","wheat_s1","wheat_s2","yams","soybean"),
            calendar=c("perennial","perennial","Barley","Barley.Winter","Pulses","Cassava","Pulses","perennial",
                       "perennial","Cotton","Pulses","perennial","Groundnuts","Pulses","Maize","Maize.2","perennial",
-                      "Millet","Pulses","perennial","Potatoes","Rapeseed","Rice","Rice.2","perennial","Pulses","Millet",
+                      "Millet","Pulses","perennial","Potatoes","Rapeseed.Winter","Rice","Rice.2","perennial","Pulses","Millet",
                       "Sorghum","Sorghum.2","perennial","Sugarbeets","Sunflower","Sweet.Potatoes","perennial","Maize",
-                      "Wheat","Wheat.Winter","Yams"))
+                      "Wheat","Wheat.Winter","Yams","Soybeans"))
 
 #loop crops
 for (crop_i in crop_list) {
-    #crop_i <- crop_list[1]
+    #crop_i <- crop_list[30]
     cat("processing crop=",crop_i,"\n")
     
     #calendar name
@@ -85,17 +85,18 @@ for (crop_i in crop_list) {
                                  overwrite=TRUE)
 
     #coefficient of variation
-    rscv <- raster::calc(rstk, fun=function(x) {sd(x,na.rm=TRUE)/mean(x,na.rm=TRUE)})
-    rscv <- raster::writeRaster(rscv, 
-                               filename=file.path(path.expand(obdir), paste(obname,"cv.tif",sep="")), 
-                               overwrite=TRUE)
+    if (!file.exists(file.path(path.expand(obdir), paste(obname,"cv.tif",sep="")))) {
+        rscv <- raster::calc(rstk, fun=function(x) {sd(x,na.rm=TRUE) / mean(x,na.rm=TRUE) * 100},
+                                   filename=file.path(path.expand(obdir), paste(obname,"cv.tif",sep="")), 
+                                   overwrite=TRUE)
+    }
 
     #median (2.5 in 5 years)
-    rsmedian <- raster::calc(rstk, fun=function(x) {quantile(x, probs=0.5, na.rm=TRUE)})
-    rsmedian <- raster::writeRaster(rsmedian, 
-                                    filename=file.path(path.expand(obdir), paste(obname,"p50.tif",sep="")),
-                                    overwrite=TRUE)
-
+    if (!file.exists(file.path(path.expand(obdir), paste(obname,"p50.tif",sep="")))) {
+        rsmedian <- raster::calc(rstk, fun=function(x) {quantile(x, probs=0.5, na.rm=TRUE)},
+                                 filename=file.path(path.expand(obdir), paste(obname,"p50.tif",sep="")),
+                                 overwrite=TRUE)
+    }
     rm(list=c("rsmean","rscv","rsmedian")); gc(T)
 
     #write probability rasters (upper and lower)
@@ -111,19 +112,17 @@ for (crop_i in crop_list) {
         fn_u <- file.path(path.expand(obdir), 
                           paste(obname,"p",formatC(pval*100, width = 2, format = "d", flag = "0"),"u.tif",sep=""))
         if (!file.exists(fn_u)) {
-            rs_u <- terra::calc(rstk, fun=function(x) {quantile(x, probs=pval, na.rm=T)},
+            rs_u <- raster::calc(rstk, fun=function(x) {quantile(x, probs=pval, na.rm=T)},
                                filename=fn_u,
-                               overwrite=TRUE,
-                               wopt=list(gdal=c("COMPRESS=LZW")))
+                               overwrite=TRUE)
         }
 
         fn_l <- file.path(path.expand(obdir), 
                           paste(obname,"p",formatC(pval*100, width = 2, format = "d", flag = "0"),"l.tif",sep=""))
         if (!file.exists(fn_l)) {
-            rs_l <- terra::app(rstk, fun=function(x) {quantile(x, probs=(1-pval), na.rm=T)},
+            rs_l <- raster::calc(rstk, fun=function(x) {quantile(x, probs=(1-pval), na.rm=T)},
                                    filename=fn_l,
-                                   overwrite=TRUE,
-                                   wopt=list(gdal=c("COMPRESS=LZW")))
+                                   overwrite=TRUE)
         }
         rm(list=c("rs_u","rs_l","fn_u","fn_l"))
     }
@@ -135,4 +134,26 @@ for (crop_i in crop_list) {
 #tar.bz2 everything
 setwd(hdir)
 system(paste("tar -cjvf ", lname, "_", period, ".tar.bz2 ", lname, "_", period, sep=""))
+
+#parallelization
+#require(doSNOW)
+#require(parallel)
+#require(foreach)
+#
+#cl <- makeCluster(4)
+#registerDoSNOW(cl)
+#
+#foreach(i = 1:4, .packages = c('raster', 'rgdal', 'rgeos', 'stringr', 'tidyverse'), .verbose = TRUE) %dopar% {
+#  
+#  print(i)
+#  my_function(climate = climate_list[[i]], 
+#              cln = 'Maize',
+#              map = 'MAIZ',
+#              rcp = rcps[i],
+#              yrs = years[i],
+#              thr = 28.6)
+#  
+#}
+#
+#stopCluster(cl)
 

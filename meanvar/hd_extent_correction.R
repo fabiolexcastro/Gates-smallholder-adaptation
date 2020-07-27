@@ -20,7 +20,8 @@ yf <- 2016
 yrs <- yi:yf
 
 #load mask
-msk <- raster(paste(hdir,"/heat_stress_flips/heat_stress_hotspots_already_rcp45_2030s.tif",sep=""))
+#Africa mask
+msk <- raster(paste(hdir,"/chirps_cv/cvr_africa.tif",sep=""))
 msk[which(!is.na(msk[]))] <- 1
 msk_vls <- raster::rasterToPoints(msk) %>%
             as_tibble() %>% 

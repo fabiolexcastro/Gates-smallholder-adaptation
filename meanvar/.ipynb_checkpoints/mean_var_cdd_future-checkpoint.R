@@ -1,4 +1,4 @@
-#JRV - calculate mean and variability indicators for max. cons. dry days
+#JRV - calculate mean and variability indicators for max. cons. dry days future climate
 #June 2020
 
 #working directory
@@ -7,21 +7,43 @@ hdir <- paste(wd,"/hazard_layers",sep="")
 
 #libraries
 library(raster)
+library(tidyverse)
 
 #layer name
 lname <- "max_cons_dry_days"
-period <- "hist"
+period <- "50s"
+rcp <- "rcp85"
 
 #years
-yi <- 1981
-yf <- 2019
+if (period == "30s") {
+    yi <- 2020
+    yf <- 2049
+} else {
+    yi <- 2040
+    yf <- 2069
+}
+
+#Africa mask
+msk <- raster(paste(hdir,"/chirps_cv/cvr_africa.tif",sep=""))
 
 #output base name
-obdir <- paste(hdir,"/",lname,"_",period,sep="")
+obdir <- paste(hdir,"/",lname,"_future/",lname,"_",rcp,"_",period,sep="")
 obname <- paste("drySsnYear_",yi,"_",yf,"_", sep="")
 
+#rename files (dryDays to dry_days)
+flist <- list.files(obdir, pattern="consecutiveDryDays")
+setwd(obdir)
+for (fl in flist) {
+    if (file.exists(fl)) {
+        nfl <- gsub("consecutiveDryDays", "drySsnYear", fl)
+        system(paste("mv ", fl, " ", nfl, sep=""))
+    }
+}
+setwd("~")
+
 #load all yearly layers, compute long-term mean, c.v. and 95th percentile
-rstk <- stack(paste(hdir,"/",lname,"_",period,"/drySsnYear_",yi:yf,".tif",sep=""))
+rstk <- stack(paste(hdir,"/",lname,"_future/",lname,"_",rcp,"_",period,"/drySsnYear_",yi:yf,".tif",sep="")) %>%
+        raster::resample(., msk, method="ngb")
 
 #given classes
 m <- c(0, 7, 1,  
@@ -88,4 +110,4 @@ rm(rstk); gc()
 
 #tar.bz2 everything
 setwd(hdir)
-system(paste("tar -cjvf ", lname, "_", period, ".tar.bz2 ", lname, "_", period, sep=""))
+system(paste("tar -cjvf ", lname, "_future.tar.bz2 ", lname, "_future", sep=""))
