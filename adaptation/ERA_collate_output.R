@@ -76,7 +76,7 @@ MaxPracs <- 1 # Max number of practices to consider
 #verify that output exists
 for(k in 1:nrow(Vars)) {
     #get run details
-    #k <- 1
+    #k <- 13
     Scenario <- Vars$Scenarios[k]
     Year <- Vars$Years[k]
     Variable <- Vars$Vars[k]
@@ -118,12 +118,25 @@ for(k in 1:nrow(Vars)) {
         #list of files
         rm_flist <- list.files(, pattern="\\.RData")
         if (length(rm_flist) != 0) {x1 <- lapply(rm_flist, FUN=function(fl) {unlink(fl)})}
+        
+        #load final output
+        rs <- raster("max_similarity_pos.tif")
+        rsc <- raster(rs)
+        rsc[which(rs[] < 0.5)] <- 0
+        rsc[which(rs[] >= 0.5)] <- 1
+        if (i == 1) {rstot <- rsc} else {rstot <- rstot + rsc}
+        
         setwd(wd)
     }
+    rstot <- writeRaster(rstot, paste(cimdir,"/allprac_k",k,".tif",sep=""), overwrite=TRUE)
 }
 
 #tar.bz2 all new output
 setwd(cimdir)
-system("tar -cjvf T0.15_light.tar.bz2 T0.15")
-system("tar -cjvf T0.27_light.tar.bz2 T0.27")
-system("tar -cjvf T0.41_light.tar.bz2 T0.41")
+if (!file.exists("T0.15_light.tar.bz2")) system("tar -cjvf T0.15_light.tar.bz2 T0.15")
+if (!file.exists("T0.27_light.tar.bz2")) system("tar -cjvf T0.27_light.tar.bz2 T0.27")
+if (!file.exists("T0.41_light.tar.bz2")) system("tar -cjvf T0.41_light.tar.bz2 T0.41")
+
+#load and plot
+setwd(cimdir)
+rs <- raster("allprac_baseline_k13.tif")
