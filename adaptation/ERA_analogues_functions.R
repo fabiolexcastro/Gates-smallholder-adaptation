@@ -3,79 +3,79 @@ load_ERA_data <- function(cimdir, DoLite, Year, Scenario) {
     #load soil data
     #load Soils Data -----
     if (DoLite) {
-        load(paste(cimdir,"/soils2.rda",sep=""), envir=.GlobalEnv)
+        load(paste(cimdir,"/input_data/soils2.rda",sep=""), envir=.GlobalEnv)
     } else {
-        load(paste(cimdir,"/soils.rda",sep=""), envir=.GlobalEnv)
+        load(paste(cimdir,"/input_data/soils.rda",sep=""), envir=.GlobalEnv)
     }
     
     #load and resample historical and future hazards data -----
     # dry days mean (hzrs_m): Load Baseline ####
-    File<-paste0(cimdir,"/hzrs_m.rda")
+    File<-paste0(cimdir,"/input_data/hzrs_m.rda")
     load(File, envir=.GlobalEnv)
     
     # hzrs_m: Load Future Data #####
     if (!is.na(Year)) {
-        File.Future<-paste0(cimdir,"/hzrs_m_",Year,"_",Scenario,".rda")
+        File.Future<-paste0(cimdir,"/input_data/hzrs_m_",Year,"_",Scenario,".rda")
         load(File.Future, envir=.GlobalEnv)
     }
 
     # dry days cv (hzrs_v): Load Baseline ####
-    File<-paste0(cimdir,"/hzrs_v.rda")
+    File<-paste0(cimdir,"/input_data/hzrs_v.rda")
     load(File, envir=.GlobalEnv)
     
     # dry days cv (hzrs_v): Load Future #####
     if (!is.na(Year)) {
-        File.Future<-paste0(cimdir,"/hzrs_v_",Year,"_",Scenario,".rda")
+        File.Future<-paste0(cimdir,"/input_data/hzrs_v_",Year,"_",Scenario,".rda")
         load(File.Future, envir=.GlobalEnv)
     }
     
     #ppt driest quarter data =====
     #ppt driest quarter: Load Baseline ####
-    File<-paste0(cimdir,"/pdq_rs.rda")
+    File<-paste0(cimdir,"/input_data/pdq_rs.rda")
     load(File, envir=.GlobalEnv)
   
     #ppt driest quarter: Load Future ####
     if (!is.na(Year)) {
-        File<-paste0(cimdir,"/pdq_rs_",Year,"_",Scenario,".rda")
+        File<-paste0(cimdir,"/input_data/pdq_rs_",Year,"_",Scenario,".rda")
         load(File, envir=.GlobalEnv)
     }
   
     #aridity index data =====
     #aridity index data: Load Baseline ####
-    File<-paste0(cimdir,"/ai_rs.rda")
+    File<-paste0(cimdir,"/input_data/ai_rs.rda")
     load(File, envir=.GlobalEnv)
       
     #aridity index data: Load Future ####
     if (!is.na(Year)) {
-        File<-paste0(cimdir,"/ai_rs.rda_",Year,"_",Scenario,".rda")
+        File<-paste0(cimdir,"/input_data/ai_rs.rda_",Year,"_",Scenario,".rda")
         load(File, envir=.GlobalEnv)
     }
     
     #chirps cv data =====
     #chirps cv data: Load Baseline ####
-    File<-paste0(cimdir,"/chcv_rs.rda")
+    File<-paste0(cimdir,"/input_data/chcv_rs.rda")
     load(File, envir=.GlobalEnv)
       
     #chirps cv data: Load Future #####
     if (!is.na(Year)) {
-        File<-paste0(cimdir,"/chcv_",Year,"_",Scenario,".rda")
+        File<-paste0(cimdir,"/input_data/chcv_",Year,"_",Scenario,".rda")
         load(File, envir=.GlobalEnv)
     }
     
     #load monthly climate data -----
     #climate: load baseline ####
-    load(paste(cimdir,"/wc_prec.rda",sep=""), envir=.GlobalEnv); wc_prec <<- stack(wc_prec)
-    load(paste(cimdir,"/wc_tmean.rda",sep=""), envir=.GlobalEnv); wc_tmean <<- stack(wc_tmean)
+    load(paste(cimdir,"/input_data/wc_prec.rda",sep=""), envir=.GlobalEnv); wc_prec <<- stack(wc_prec)
+    load(paste(cimdir,"/input_data/wc_tmean.rda",sep=""), envir=.GlobalEnv); wc_tmean <<- stack(wc_tmean)
     
     #climate: load future ####
     #precipitation
     if (!is.na(Year)) {
-        wc_prec_fut <<- load.Rdata2(filename=paste0("prec_",gsub("[.]","_",Scenario),"_",Year,"_","Resamp.RData"), path=cimdir) 
+        wc_prec_fut <<- load.Rdata2(filename=paste0("prec_",gsub("[.]","_",Scenario),"_",Year,"_","Resamp.rda"), path=paste(cimdir,"/input_data",sep=""))
     }
     
     #temperature
     if (!is.na(Year)) {
-        wc_tmean_fut <<- load.Rdata2(filename=paste0("tmean_",gsub("[.]","_",Scenario),"_",Year,"_","Resamp.RData"), path=cimdir) 
+        wc_tmean_fut <<- load.Rdata2(filename=paste0("tmean_",gsub("[.]","_",Scenario),"_",Year,"_","Resamp.rda"), path=paste(cimdir,"/input_data",sep=""))
     }
 }
 
@@ -106,7 +106,7 @@ run_points <- function(pr_i, pr_df, data_sites, cimdir, Threshold, Year, Scenari
     if (!file.exists(pr_odir)) {dir.create(pr_odir,recursive=T)}
     
     #verbose what i'm running
-    cat("processing practice=", prname, i, "of", nrow(pr_df), "/ crop=", Product, "/ n=", nrow(in_data),"\n")
+    cat("processing practice=", prname, pr_i, "of", nrow(pr_df), "/ crop=", Product, "/ n=", nrow(in_data),"\n")
     
     #loop through points for practice
     allstk <- c()
@@ -252,3 +252,4 @@ run_points <- function(pr_i, pr_df, data_sites, cimdir, Threshold, Year, Scenari
     #return object
     return(maxsim)
 }
+

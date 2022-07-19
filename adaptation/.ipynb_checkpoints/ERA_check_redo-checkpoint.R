@@ -14,7 +14,7 @@ require(rworldmap)
 require(miceadds)
 
 #source functions
-source("~/work/gitrepo/Gates-smallholder-adaptation/adaptation/ERA_analogues_functions.R")
+source("~/work/Repositories/Gates-smallholder-adaptation/adaptation/ERA_analogues_functions.R")
 
 #analysis version
 vr <- 4
@@ -23,19 +23,18 @@ vr <- 4
 DoLite <- T
 
 #set directories - MAKE SURE YOU START CONSOLE FROM ANALOGUES FOLDER-----
-wd <- "~/work"
-if(!dir.exists(wd)){dir.create(wd)}
-cimdir <- paste(wd,"/ERA_analogues_modelling",sep="")
+wd <- "~/work/ONECGIAR/Atlas_MVP/adaptation_options"
+cimdir <- paste(wd,"/ERA_analogues",sep="")
 if(!dir.exists(cimdir)){dir.create(cimdir)}
 
 #get Africa shapefile -----
-sh_ctry <- readOGR(paste(wd,"/Africa_shp/African_continet.shp",sep=""))
+sh_ctry <- readOGR("~/work/ONECGIAR/Data/Africa_shp/African_continet.shp")
 sh_ctry <- spTransform(sh_ctry, crs("+proj=longlat +ellps=WGS84 +no_defs"))
 sh_xt <- extent(sh_ctry)
 sh_xt@xmin <- sh_xt@xmin-1; sh_xt@ymin <- sh_xt@ymin-1; sh_xt@xmax <- sh_xt@xmax+1; sh_xt@ymax <- sh_xt@ymax+1
 
 # Create a Mask- ---
-load(paste(cimdir,"/wc_prec.rda",sep=""))
+load(paste(cimdir,"/input_data/wc_prec.rda",sep=""))
 msk <- wc_prec[[1]]; rm(wc_prec)
 msk[which(!is.na(msk[]))] <- 1
 
@@ -82,7 +81,7 @@ data_sites$Npracs <- unlist(lapply(strsplit(data_sites$PrName,"-"),length))
 #create Scenarios x Years x Tresholds Loop ####
 Scenarios <- c("rcp4.5", "rcp8.5")
 Years <- c(2030, 2050)
-Thresholds <- c(0.15, 0.27, 0.41)
+Thresholds <- 0.41 #c(0.15, 0.27, 0.41)
 Vars <- expand.grid(Years=Years, Scenarios=Scenarios, Threshold=Thresholds)
 Vars$Scenarios <- as.character(Vars$Scenarios)
 Vars <- rbind(Vars,expand.grid(Years=NA, Scenarios="baseline", Threshold=Thresholds))
@@ -98,7 +97,7 @@ MaxPracs <- 1 # Max number of practices to consider
 #verify that output exists
 for(k in 1:nrow(Vars)) {
     #get run details
-    #k <- 4
+    #k <- 1
     Scenario <- Vars$Scenarios[k]
     Year <- Vars$Years[k]
     Variable <- Vars$Vars[k]
@@ -129,7 +128,7 @@ for(k in 1:nrow(Vars)) {
     
     #loop practices
     for (i in 1:nrow(Y)) {
-        #i <- 5
+        #i <- 1
         #practice and product names
         prname<-Y[i,PrName]
         Product<-Y[i,Product.Simple]

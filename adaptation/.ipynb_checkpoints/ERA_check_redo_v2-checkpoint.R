@@ -14,10 +14,10 @@ require(rworldmap)
 require(miceadds)
 
 #source functions
-source("~/work/Repositories/Gates-smallholder-adaptation/adaptation/ERA_analogues_functions.R")
+source("~/work/Repositories/Gates-smallholder-adaptation/adaptation/ERA_analogues_functions_v2.R")
 
 #analysis version
-vr <- 4
+vr <- 5
 
 # Run full or streamlined analysis?
 DoLite <- T
@@ -25,7 +25,6 @@ DoLite <- T
 #set directories - MAKE SURE YOU START CONSOLE FROM ANALOGUES FOLDER-----
 wd <- "~/work/ONECGIAR/Atlas_MVP/adaptation_options"
 cimdir <- paste(wd,"/ERA_analogues",sep="")
-if(!dir.exists(cimdir)){dir.create(cimdir)}
 
 #get Africa shapefile -----
 sh_ctry <- readOGR("~/work/ONECGIAR/Data/Africa_shp/African_continet.shp")
@@ -81,7 +80,7 @@ data_sites$Npracs <- unlist(lapply(strsplit(data_sites$PrName,"-"),length))
 #create Scenarios x Years x Tresholds Loop ####
 Scenarios <- c("rcp4.5", "rcp8.5")
 Years <- c(2030, 2050)
-Thresholds <- 0.41 #c(0.15, 0.27, 0.41)
+Thresholds <- c(0.0, 0.15, 0.27, 0.41)
 Vars <- expand.grid(Years=Years, Scenarios=Scenarios, Threshold=Thresholds)
 Vars$Scenarios <- as.character(Vars$Scenarios)
 Vars <- rbind(Vars,expand.grid(Years=NA, Scenarios="baseline", Threshold=Thresholds))
@@ -134,8 +133,8 @@ for(k in 1:nrow(Vars)) {
         Product<-Y[i,Product.Simple]
         
         #folder and file
-        pr_odir <- paste(cimdir,"/T",Threshold,"/",Product,"/",Year,"/",gsub("[.]","_",Scenario),"/",gsub(" ", "_", prname, fixed=T),"_v",vr,sep="")
-        pr_ofil <- paste(pr_odir,"/max_similarity_pos.tif",sep="")
+        pr_odir <- paste(cimdir,"/T",Threshold,"_v",vr,"/",Product,"/",Year,"/",gsub("[.]","_",Scenario),"/",gsub(" ", "_", prname, fixed=TRUE),"_v",vr,sep="")
+        pr_ofil <- paste(pr_odir,"/max_similarity_final_pos.tif",sep="")
         if (!file.exists(pr_ofil)) {
             cat("...practice=", prname, "does not have an output, so deleting and redoing\n")
             cat("...dir=", pr_odir, "\n")

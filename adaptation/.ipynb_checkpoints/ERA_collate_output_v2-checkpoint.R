@@ -1,42 +1,29 @@
 #JRV - ERA analyses for adaptation atlas, check output and rerun
 
 #load libraries
-require(analogues)
-require(rgdal)
-require(raster)
-require(maptools); data(wrld_simpl)
 require(data.table)
 require(Hmisc)
 require(tidyverse)
-require(ggplot2)
 require(metR)
-require(rworldmap)
 require(miceadds)
-
-#source functions
-source("~/work/Repositories/Gates-smallholder-adaptation/adaptation/ERA_analogues_functions.R")
+require(rgdal)
+require(raster)
+require(maptools); data(wrld_simpl)
 
 #analysis version
-vr <- 4
+vr <- 5
 
-# Run full or streamlined analysis?
-DoLite <- T
-
-#set directories - MAKE SURE YOU START CONSOLE FROM ANALOGUES FOLDER-----
+#set directories
 wd <- "~/work/ONECGIAR/Atlas_MVP/adaptation_options"
 cimdir <- paste(wd,"/ERA_analogues",sep="")
-if(!dir.exists(cimdir)){dir.create(cimdir)}
 
-#get Africa shapefile -----
-sh_ctry <- readOGR("~/work/ONECGIAR/Data/Africa_shp/African_continet.shp")
-sh_ctry <- spTransform(sh_ctry, crs("+proj=longlat +ellps=WGS84 +no_defs"))
-sh_xt <- extent(sh_ctry)
-sh_xt@xmin <- sh_xt@xmin-1; sh_xt@ymin <- sh_xt@ymin-1; sh_xt@xmax <- sh_xt@xmax+1; sh_xt@ymax <- sh_xt@ymax+1
-
-# Create a Mask- ---
-load(paste(cimdir,"/input_data/wc_prec.rda",sep=""))
-msk <- wc_prec[[1]]; rm(wc_prec)
-msk[which(!is.na(msk[]))] <- 1
+#create Scenarios x Years x Tresholds Loop ####
+Scenarios <- c("rcp4.5", "rcp8.5")
+Years <- c(2030, 2050)
+Thresholds <- c(0.0, 0.15, 0.27, 0.41)
+Vars <- expand.grid(Years=Years, Scenarios=Scenarios, Threshold=Thresholds)
+Vars$Scenarios <- as.character(Vars$Scenarios)
+Vars <- rbind(Vars,expand.grid(Years=NA, Scenarios="baseline", Threshold=Thresholds))
 
 #read in ERA data =====
 all_data <- read.csv(paste(cimdir,"/ERA_Test_Data.csv",sep=""))
@@ -78,14 +65,6 @@ data_sites[, PrName:=as.character(PrName)]
 data_sites <- as.data.frame(data_sites)
 data_sites$Npracs <- unlist(lapply(strsplit(data_sites$PrName,"-"),length))
 
-#create Scenarios x Years x Tresholds Loop ####
-Scenarios <- c("rcp4.5", "rcp8.5")
-Years <- c(2030, 2050)
-Thresholds <- 0.41 #c(0.15, 0.27, 0.41)
-Vars <- expand.grid(Years=Years, Scenarios=Scenarios, Threshold=Thresholds)
-Vars$Scenarios <- as.character(Vars$Scenarios)
-Vars <- rbind(Vars,expand.grid(Years=NA, Scenarios="baseline", Threshold=Thresholds))
-
 #ERA product to exclude
 ExcludeProducts <- c("Fodder Legume","Fodder Tree","Okra","Olive","Other Bean","Pepper","Pumpkin","Tomato","Watermelon","African Yam Bean","Amaranth",
                      "Amaranth Grain","Apple","Cabbage","Capsicum","Carrot & Parsnip","Chickpea","Chili","Cucumber","Date","Eggplant","Fava Bean","Firewood",
@@ -103,10 +82,6 @@ for(k in 1:nrow(Vars)) {
     Variable <- Vars$Vars[k]
     Threshold <- Vars$Threshold[k]
     print(paste0("Running: Scenario = ",Vars$Scenarios[k]," | Year = ",Vars$Years[k]," | Threshold = ",Vars$Threshold[k]))
-    
-    #load ERA climate hazard and soil data
-    cat("...loading ERA hazards and soil input data\n")
-    load_ERA_data(cimdir, DoLite, Year, Scenario)
     
     #Subset ERA Data ====
     Y<-data.table(data_sites)
@@ -132,22 +107,31 @@ for(k in 1:nrow(Vars)) {
         #practice and product names
         prname<-Y[i,PrName]
         Product<-Y[i,Product.Simple]
+        cat("...removing RData for practice=", prname, "/ crop=", Product, "\n")
         
         #folder and file
-        pr_odir <- paste(cimdir,"/T",Threshold,"/",Product,"/",Year,"/",gsub("[.]","_",Scenario),"/",gsub(" ", "_", prname, fixed=T),"_v",vr,sep="")
-        pr_ofil <- paste(pr_odir,"/max_similarity_pos.tif",sep="")
-        if (!file.exists(pr_ofil)) {
-            cat("...practice=", prname, "does not have an output, so deleting and redoing\n")
-            cat("...dir=", pr_odir, "\n")
-            
-            #remove directory if it exists
-            if (file.exists(pr_odir)) {unlink(pr_odir, recursive=TRUE, force=TRUE)}
-            
-            #run practice
-            xres <- run_points(i, pr_df=Y, data_sites, cimdir, Threshold, Year, Scenario, vr, 
-                               etype='pos', DoLite)
-        } else {
-            cat("...practice=", prname, "seems to be ok (-:\n")
-        }
+        pr_odir <- paste(cimdir,"/T",Threshold,"_v",vr,"/",Product,"/",Year,"/",gsub("[.]","_",Scenario),"/",gsub(" ", "_", prname, fixed=T),"_v",vr,sep="")
+        
+        #set working directory
+        setwd(pr_odir)
+        
+        #list of files
+        rm_flist <- list.files(, pattern="\\.RData")
+        if (length(rm_flist) != 0) {x1 <- lapply(rm_flist, FUN=function(fl) {unlink(fl)})}
+        
+        #load final output
+        rsc <- raster("max_similarity_final_binary_pos.tif")
+        if (i == 1) {rstot <- rsc} else {rstot <- rstot + rsc}
+        
+        setwd(wd)
     }
+    rstot <- writeRaster(rstot, paste(cimdir,"/allprac_k",k,"_v",vr,".tif",sep=""), overwrite=TRUE)
 }
+
+#tar.bz2 all new output
+setwd(cimdir)
+if (!file.exists("T0_v5_light.tar.bz2")) system("tar -cjvf T0_v5_light.tar.bz2 T0_v5")
+if (!file.exists("T0.15_v5_light.tar.bz2")) system("tar -cjvf T0.15_v5_light.tar.bz2 T0.15_v5")
+if (!file.exists("T0.27_v5_light.tar.bz2")) system("tar -cjvf T0.27_v5_light.tar.bz2 T0.27_v5")
+if (!file.exists("T0.41_v5_light.tar.bz2")) system("tar -cjvf T0.41_v5_light.tar.bz2 T0.41_v5")
+

@@ -14,13 +14,13 @@ require(maptools); data(wrld_simpl)
 vr <- 4
 
 #set directories
-wd <- "~/work"
-cimdir <- paste(wd,"/ERA_analogues_modelling",sep="")
+wd <- "~/work/ONECGIAR/Atlas_MVP/adaptation_options"
+cimdir <- paste(wd,"/ERA_analogues",sep="")
 
 #create Scenarios x Years x Tresholds Loop ####
 Scenarios <- c("rcp4.5", "rcp8.5")
 Years <- c(2030, 2050)
-Thresholds <- c(0.15, 0.27, 0.41)
+Thresholds <- 0.41 #c(0.15, 0.27, 0.41)
 Vars <- expand.grid(Years=Years, Scenarios=Scenarios, Threshold=Thresholds)
 Vars$Scenarios <- as.character(Vars$Scenarios)
 Vars <- rbind(Vars,expand.grid(Years=NA, Scenarios="baseline", Threshold=Thresholds))
@@ -76,7 +76,7 @@ MaxPracs <- 1 # Max number of practices to consider
 #verify that output exists
 for(k in 1:nrow(Vars)) {
     #get run details
-    #k <- 13
+    #k <- 1
     Scenario <- Vars$Scenarios[k]
     Year <- Vars$Years[k]
     Variable <- Vars$Vars[k]
@@ -105,8 +105,8 @@ for(k in 1:nrow(Vars)) {
     for (i in 1:nrow(Y)) {
         #i <- 1
         #practice and product names
-        prname<-Y[i,PrName]
-        Product<-Y[i,Product.Simple]
+        prname <- Y[i,PrName]
+        Product <- Y[i,Product.Simple]
         cat("...removing RData for practice=", prname, "/ crop=", Product, "\n")
         
         #folder and file
@@ -133,10 +133,7 @@ for(k in 1:nrow(Vars)) {
 
 #tar.bz2 all new output
 setwd(cimdir)
-if (!file.exists("T0.15_light.tar.bz2")) system("tar -cjvf T0.15_light.tar.bz2 T0.15")
-if (!file.exists("T0.27_light.tar.bz2")) system("tar -cjvf T0.27_light.tar.bz2 T0.27")
+#if (!file.exists("T0.15_light.tar.bz2")) system("tar -cjvf T0.15_light.tar.bz2 T0.15")
+#if (!file.exists("T0.27_light.tar.bz2")) system("tar -cjvf T0.27_light.tar.bz2 T0.27")
 if (!file.exists("T0.41_light.tar.bz2")) system("tar -cjvf T0.41_light.tar.bz2 T0.41")
 
-#load and plot
-setwd(cimdir)
-rs <- raster("allprac_baseline_k13.tif")
